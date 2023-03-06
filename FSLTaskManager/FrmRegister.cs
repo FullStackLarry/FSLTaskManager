@@ -1,26 +1,18 @@
 ﻿using FSLTaskManager.Data;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace FSLTaskManager
 {
     public partial class FrmRegister : Form
     {
-        private APIClient _APIClient = new APIClient();
+        private readonly APIClient _APIClient = new();
 
         public FrmRegister()
         {
             InitializeComponent();
         }
 
-        private async void BtnRegister_Click(object sender, EventArgs e)
+        private void BtnRegister_Click(object sender, EventArgs e)
         {
             try
             {
@@ -30,7 +22,7 @@ namespace FSLTaskManager
                     TxtEmail.Text = TxtEmail.Text.Trim();
                     TxtFirstName.Text = TxtFirstName.Text.Trim();
                     TxtLastName.Text = TxtLastName.Text.Trim();
-                    var result = await _APIClient.Register(TxtEmail.Text, TxtFirstName.Text, TxtLastName.Text, TxtPassword.Text);
+                    var result = _APIClient.Register(TxtEmail.Text, TxtFirstName.Text, TxtLastName.Text, TxtPassword.Text);
                     if (result.Success)
                     {
                         MessageBox.Show(String.Format("Your account has been created. A verification code has been sent to {0}.", TxtEmail.Text));
@@ -42,7 +34,7 @@ namespace FSLTaskManager
                     }
                     else if (result.EmailFailed)
                     {
-                        MessageBox.Show(String.Format("Your account has been created, but sending the verification email failed. Click Send Email on Login screen to try again.", TxtEmail.Text));
+                        MessageBox.Show(String.Format("Your account has been created, but sending the verification email to {0} failed. Click Send Email on Login screen to try again.", TxtEmail.Text));
                         this.Close();
                     }
                     else

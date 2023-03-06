@@ -1,14 +1,5 @@
 ﻿using FSLTaskManager.Data;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using static System.Runtime.CompilerServices.RuntimeHelpers;
 
 namespace FSLTaskManager
 {
@@ -17,14 +8,14 @@ namespace FSLTaskManager
         public delegate void TokenReceivedEventHandler(string token);
         public event TokenReceivedEventHandler? TokenReceived;
 
-        private APIClient _APIClient = new APIClient();
+        private readonly APIClient _APIClient = new();
 
         public FrmLogin()
         {
             InitializeComponent();
         }
 
-        private async void BtnLogin_Click(object sender, EventArgs e)
+        private void BtnLogin_Click(object sender, EventArgs e)
         {
             try
             {
@@ -34,10 +25,10 @@ namespace FSLTaskManager
                 {
                     TxtEmail.Text = TxtEmail.Text.Trim();
                     TxtPassword.Text = TxtPassword.Text.Trim();
-                    var result = await _APIClient.Login(TxtEmail.Text, TxtPassword.Text);
+                    var result = _APIClient.Login(TxtEmail.Text, TxtPassword.Text);
                     if (result.Token != "")
                     {
-                        if (TokenReceived != null) TokenReceived(result.Token);
+                        TokenReceived?.Invoke(result.Token);
                         this.Close();
                     }
                     else

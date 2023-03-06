@@ -8,12 +8,12 @@ namespace FSLTaskManager
         private const string TOKEN_REGISTRY_KEY = "HKEY_CURRENT_USER\\Software\\FSLTaskManager";
         private const string TOKEN_REGISTRY_NAME = "token";
 
-        private APIClient _APIClient = new APIClient();
+        private readonly APIClient _APIClient = new();
 
         private User? _currentUser = null;
         private User? _currentAssignee = null;
         private TMTask? _currentTask = null;
-        
+
         private FrmUserSettings? _userSettings;
 
         public FrmMain()
@@ -24,7 +24,7 @@ namespace FSLTaskManager
         private void FrmMain_Load(object sender, EventArgs e)
         {
             object? token = Microsoft.Win32.Registry.GetValue(TOKEN_REGISTRY_KEY, TOKEN_REGISTRY_NAME, "");
-            if (token == null) token = "";
+            token ??= "";
             LoadUser((string)token);
         }
 
@@ -37,7 +37,7 @@ namespace FSLTaskManager
             LoadTaskNotes();
         }
 
-        private async void LoadUser(string token)
+        private void LoadUser(string token)
         {
             Microsoft.Win32.Registry.SetValue(TOKEN_REGISTRY_KEY, TOKEN_REGISTRY_NAME, token);
 
@@ -55,8 +55,8 @@ namespace FSLTaskManager
 
             if (token != "")
             {
-                APIClient apiClient = new APIClient();
-                var result = await apiClient.GetLoggedInUser();
+                APIClient apiClient = new();
+                var result = apiClient.GetLoggedInUser();
                 if (result.Error != "")
                 {
                     MessageBox.Show(result.Error);
@@ -69,14 +69,14 @@ namespace FSLTaskManager
                     BtnLogout.Enabled = true;
                     BtnSettings.Enabled = true;
                     LblUserName.Text = _currentUser.fullName;
-                    PbAvatar.Image = await apiClient.GetImage(_currentUser.avatarUrl);
+                    PbAvatar.Image = apiClient.GetImage(_currentUser.avatarUrl);
                 }
             }
 
             LoadAssignees();
         }
 
-        private async void LoadAssignees()
+        private void LoadAssignees()
         {
             FlpAssignees.Controls.Clear();
 
@@ -98,18 +98,18 @@ namespace FSLTaskManager
                 FlpAssignees.Controls.Add(assignee);
                 _currentAssignee = _currentUser;
 
-                var userAssignees = await _APIClient.GetUserAssignees();
+                var userAssignees = _APIClient.GetUserAssignees();
                 if (userAssignees.Error == "")
                 {
                     GbAssignees.Visible = true;
-                    
+
                     if (userAssignees.Assignees.Length > 0)
                     {
                         foreach (User user in userAssignees.Assignees)
                         {
                             assignee = new UCAssignee();
                             assignee.AssigneeClicked += AssigneeClicked;
-                            Image? image = await _APIClient.GetImage(user.avatarUrl);
+                            Image? image = _APIClient.GetImage(user.avatarUrl);
                             assignee.SetValues(user, image);
                             FlpAssignees.Controls.Add(assignee);
 
@@ -125,7 +125,7 @@ namespace FSLTaskManager
             LoadTasks();
         }
 
-        private async void LoadTasks()
+        private void LoadTasks()
         {
             FlpTasks.Controls.Clear();
 
@@ -137,7 +137,7 @@ namespace FSLTaskManager
             else
             {
                 BtnAddTask.Enabled = true;
-                var userTasks = await _APIClient.GetTasks(_currentAssignee._id);
+                var userTasks = _APIClient.GetTasks(_currentAssignee._id);
                 if (userTasks.Error == "")
                 {
 
@@ -167,7 +167,7 @@ namespace FSLTaskManager
             LoadTaskNotes();
         }
 
-        private async void LoadTaskNotes()
+        private void LoadTaskNotes()
         {
             FlpTaskNotes.Controls.Clear();
 
@@ -178,7 +178,7 @@ namespace FSLTaskManager
             else
             {
                 BtnAddTaskNote.Enabled = true;
-                var taskNotes = await _APIClient.GetTaskNotes(_currentTask._id);
+                var taskNotes = _APIClient.GetTaskNotes(_currentTask._id);
                 if (taskNotes.Error == "")
                 {
 
@@ -216,14 +216,14 @@ namespace FSLTaskManager
 
         private void TaskEditClicked(TMTask task)
         {
-            FrmEditTask f = new FrmEditTask();
+            FrmEditTask f = new();
             f.SetValues(task);
             if (f.ShowDialog() == DialogResult.OK) LoadTasks();
         }
 
         private void TaskNoteEditClicked(TMTaskNote taskNote)
         {
-            FrmEditTaskNote f = new FrmEditTaskNote();
+            FrmEditTaskNote f = new();
             f.SetValues(taskNote);
             if (f.ShowDialog() == DialogResult.OK) LoadTaskNotes();
         }
@@ -257,7 +257,7 @@ namespace FSLTaskManager
                 _userSettings.SetValues(_currentUser.firstName, _currentUser.lastName, _currentUser.avatarUrl);
         }
 
-        private async void BtnAddAssignee_Click(object sender, EventArgs e)
+        private void BtnAddAssignee_Click(object sender, EventArgs e)
         {
             TxtAssigneeEmail.Text = TxtAssigneeEmail.Text.Trim();
             if (TxtAssigneeEmail.Text == "")
@@ -267,7 +267,7 @@ namespace FSLTaskManager
                 return;
             }
 
-            var result = await _APIClient.AddAssignee(TxtAssigneeEmail.Text);
+            var result = _APIClient.AddAssignee(TxtAssigneeEmail.Text);
             if (result == "")
             {
                 LoadAssignees();
@@ -280,11 +280,13 @@ namespace FSLTaskManager
         {
             if (_currentUser != null && _currentAssignee != null)
             {
-                FrmEditTask f = new FrmEditTask();
-                TMTask newTask = new TMTask();
-                newTask.owner = _currentUser._id;
-                newTask.ownerName = _currentUser.fullName;
-                newTask.assignedTo = _currentAssignee._id;
+                FrmEditTask f = new();
+                TMTask newTask = new()
+                {
+                    owner = _currentUser._id,
+                    ownerName = _currentUser.fullName,
+                    assignedTo = _currentAssignee._id
+                };
                 f.SetValues(newTask);
                 if (f.ShowDialog() == DialogResult.OK) LoadTasks();
             }
@@ -295,10 +297,12 @@ namespace FSLTaskManager
         {
             if (_currentUser != null && _currentTask != null)
             {
-                FrmEditTaskNote f = new FrmEditTaskNote();
-                TMTaskNote newTaskNote = new TMTaskNote();
-                newTaskNote.task = _currentTask._id;
-                newTaskNote.owner = _currentUser;
+                FrmEditTaskNote f = new();
+                TMTaskNote newTaskNote = new()
+                {
+                    task = _currentTask._id,
+                    owner = _currentUser
+                };
                 f.SetValues(newTaskNote);
                 if (f.ShowDialog() == DialogResult.OK) LoadTaskNotes();
             }

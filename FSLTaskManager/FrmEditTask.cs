@@ -1,20 +1,11 @@
 ﻿using FSLTaskManager.Data;
 using FSLTaskManager.Models;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace FSLTaskManager
 {
     public partial class FrmEditTask : Form
     {
-        private APIClient _apiClient = new APIClient();
+        private readonly APIClient _apiClient = new();
         private TMTask? _task = null;
 
         public FrmEditTask()
@@ -61,10 +52,10 @@ namespace FSLTaskManager
                 DtpCompletedDate.Value = Convert.ToDateTime(task.completedDate);
             }
             else
-                DtpCompletedDate.Checked= false;
+                DtpCompletedDate.Checked = false;
         }
 
-        private async void BtnSave_Click(object sender, EventArgs e)
+        private void BtnSave_Click(object sender, EventArgs e)
         {
             string result = "";
 
@@ -83,11 +74,11 @@ namespace FSLTaskManager
 
                     if (_task._id == "")
                     {
-                        result = await _apiClient.AddTask(_task);
+                        result = _apiClient.AddTask(_task);
                     }
                     else
                     {
-                        result = await _apiClient.UpdateTask(_task);
+                        result = _apiClient.UpdateTask(_task);
                     }
                 }
 

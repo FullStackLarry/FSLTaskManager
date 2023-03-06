@@ -50,6 +50,14 @@
             "PrerequisitesLocation" = "2:1"
             "Url" = "8:"
             "ComponentsUrl" = "8:"
+                "Items"
+                {
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.7.2"
+                    {
+                    "Name" = "8:Microsoft .NET Framework 4.7.2 (x86 and x64)"
+                    "ProductCode" = "8:.NETFramework,Version=v4.7.2"
+                    }
+                }
             }
         }
         "Release"
@@ -74,6 +82,14 @@
             "PrerequisitesLocation" = "2:1"
             "Url" = "8:"
             "ComponentsUrl" = "8:"
+                "Items"
+                {
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.7.2"
+                    {
+                    "Name" = "8:Microsoft .NET Framework 4.7.2 (x86 and x64)"
+                    "ProductCode" = "8:.NETFramework,Version=v4.7.2"
+                    }
+                }
             }
         }
     }
@@ -182,15 +198,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:FSL Task Manager"
-        "ProductCode" = "8:{FDBB4270-5E94-498E-835D-5A764F0B3887}"
-        "PackageCode" = "8:{03A47C60-B2C4-4291-B004-2B61305B5F35}"
+        "ProductCode" = "8:{0611CB1C-570A-4B79-9CD1-FA8D7C0C4F20}"
+        "PackageCode" = "8:{D1F93C32-6E01-418C-9225-3E4359006662}"
         "UpgradeCode" = "8:{6DDCE374-AC6E-498A-95A0-ADB193C69730}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:TRUE"
-        "ProductVersion" = "8:1.0.0"
+        "ProductVersion" = "8:1.1.0"
         "Manufacturer" = "8:FullStackLarry.com"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"

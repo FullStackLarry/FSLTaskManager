@@ -1,14 +1,5 @@
 ﻿using FSLTaskManager.Data;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using static System.Runtime.CompilerServices.RuntimeHelpers;
 
 namespace FSLTaskManager
 {
@@ -21,7 +12,7 @@ namespace FSLTaskManager
             InitializeComponent();
         }
 
-        private async void BtnSend_Click(object sender, EventArgs e)
+        private void BtnSend_Click(object sender, EventArgs e)
         {
             try
             {
@@ -29,7 +20,7 @@ namespace FSLTaskManager
                 if (ValidateChildren(ValidationConstraints.Enabled))
                 {
                     TxtEmail.Text = TxtEmail.Text.Trim();
-                    var result = await _APIClient.SendEmail(TxtEmail.Text);
+                    var result = _APIClient.SendEmail(TxtEmail.Text);
                     if (result == "")
                     {
                         MessageBox.Show("Validation email has been sent. Check your SPAM folder if you do not receive it shortly.");

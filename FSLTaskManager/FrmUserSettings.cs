@@ -1,13 +1,5 @@
 ﻿using FSLTaskManager.Data;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace FSLTaskManager
 {
@@ -15,15 +7,15 @@ namespace FSLTaskManager
     {
         public event EventHandler? DoneLoading;
 
-        private static List<KeyValuePair<string, Image?>> images = new List<KeyValuePair<string, Image?>>();
-        private APIClient _APIClient = new APIClient();
+        private static readonly List<KeyValuePair<string, Image?>> images = new();
+        private readonly APIClient _APIClient = new();
 
         public FrmUserSettings()
         {
             InitializeComponent();
         }
 
-        private async void FrmUserSettings_Load(object sender, EventArgs e)
+        private void FrmUserSettings_Load(object sender, EventArgs e)
         {
             try
             {
@@ -31,7 +23,7 @@ namespace FSLTaskManager
 
                 if (images.Count == 0)
                 {
-                    var result = await _APIClient.GetAvatarsList();
+                    var result = _APIClient.GetAvatarsList();
                     if (result.Error != "")
                     {
                         MessageBox.Show(result.Error);
@@ -40,7 +32,7 @@ namespace FSLTaskManager
                     {
                         foreach (string url in result.AvatarList)
                         {
-                            Image? image = await _APIClient.GetImage(url);
+                            Image? image = _APIClient.GetImage(url);
                             images.Add(new KeyValuePair<string, Image?>(url, image));
                         }
                     }
@@ -51,12 +43,14 @@ namespace FSLTaskManager
                     foreach (KeyValuePair<string, Image?> img in images)
                     {
                         AvatarImages.Images.Add(img.Key, img.Value);
-                        ListViewItem lvi = new ListViewItem();
-                        lvi.ImageKey = img.Key;
+                        ListViewItem lvi = new()
+                        {
+                            ImageKey = img.Key
+                        };
                         LvAvatars.Items.Add(lvi);
                     }
                 }
-                if (DoneLoading != null) DoneLoading.Invoke(this, EventArgs.Empty);
+                DoneLoading?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
@@ -78,14 +72,14 @@ namespace FSLTaskManager
             }
         }
 
-        private async void BtnSave_Click(object sender, EventArgs e)
+        private void BtnSave_Click(object sender, EventArgs e)
         {
             try
             {
                 this.Cursor = Cursors.WaitCursor;
                 if (ValidateChildren(ValidationConstraints.Enabled))
                 {
-                    string result = await _APIClient.SaveUserSettings(TxtFirstName.Text, TxtLastName.Text, LvAvatars.SelectedItems[0].ImageKey);
+                    string result = _APIClient.SaveUserSettings(TxtFirstName.Text, TxtLastName.Text, LvAvatars.SelectedItems[0].ImageKey);
                     if (result != "")
                     {
                         MessageBox.Show(result);

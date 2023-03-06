@@ -1,7 +1,7 @@
-﻿using System.Net.Http.Json;
-using System.Net.Http.Headers;
+﻿using FSLTaskManager.Models;
 using System.Collections;
-using FSLTaskManager.Models;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 
 namespace FSLTaskManager.Data
 {
@@ -12,14 +12,16 @@ namespace FSLTaskManager.Data
 #else
         private const string BASE_URL = "https://fslapi.herokuapp.com/";
 #endif
-        private const string API_URL = BASE_URL  + "v1/";
+        private const string API_URL = BASE_URL + "v1/";
 
-        private HttpClient _http;
+        private readonly HttpClient _http;
 
         public APIClient()
         {
-            _http = new HttpClient();
-            _http.BaseAddress = new Uri(API_URL);
+            _http = new HttpClient
+            {
+                BaseAddress = new Uri(API_URL)
+            };
         }
 
         public static string userToken = "";
@@ -35,9 +37,9 @@ namespace FSLTaskManager.Data
             _http.DefaultRequestHeaders.Authorization = null;
         }
 
-        private static Hashtable cachedImages = new Hashtable();
+        private static readonly Hashtable cachedImages = new();
 
-        public async Task<Image?> GetImage(string url)
+        public Image? GetImage(string url)
         {
             try
             {
@@ -46,7 +48,9 @@ namespace FSLTaskManager.Data
                     return (Image?)cachedImages[url];
                 }
                 string imageUrl = BASE_URL + url;
-                var imageBytes = await _http.GetByteArrayAsync(imageUrl);
+                var task = Task.Run(() => _http.GetByteArrayAsync(imageUrl));
+                task.Wait();
+                var imageBytes = task.Result;
                 Image image = Image.FromStream(new MemoryStream(imageBytes));
                 cachedImages.Add(url, image);
                 return image;
@@ -58,29 +62,35 @@ namespace FSLTaskManager.Data
             }
         }
 
-        public async Task<LoginResult> Login(string Email, string Password)
+        public LoginResult Login(string Email, string Password)
         {
             var content = new FormUrlEncodedContent(new[]{
                 new KeyValuePair<string,string>("email", Email),
                 new KeyValuePair<string,string>("password", Password)
             });
 
-            HttpResponseMessage resp = await _http.PostAsync("auth/login", content);
+            var taskPost = Task.Run(() => _http.PostAsync("auth/login", content));
+            taskPost.Wait();
+            HttpResponseMessage resp = taskPost.Result;
 
-            LoginResult loginResult = new LoginResult();
+            LoginResult loginResult = new();
 
             if (resp.StatusCode == System.Net.HttpStatusCode.OK)
             {
-                TokenResponse? tokenResponse = await resp.Content.ReadFromJsonAsync<TokenResponse>();
-                if (tokenResponse != null ) loginResult.Token = tokenResponse.token;
+                var taskReadOK = Task.Run(() => resp.Content.ReadFromJsonAsync<TokenResponse>());
+                taskReadOK.Wait();
+                TokenResponse? tokenResponse = taskReadOK.Result;
+                if (tokenResponse != null) loginResult.Token = tokenResponse.token;
                 return loginResult;
             }
-            ErrorResponse? errorResponse = await resp.Content.ReadFromJsonAsync<ErrorResponse>();
+            var taskReadError = Task.Run(() => resp.Content.ReadFromJsonAsync<ErrorResponse>());
+            taskReadError.Wait();
+            ErrorResponse? errorResponse = taskReadError.Result;
             if (errorResponse != null) loginResult.Error = errorResponse.error;
             return loginResult;
         }
 
-        public async Task<RegistrationResult> Register(string Email, string FirstName, string LastName, string Password)
+        public RegistrationResult Register(string Email, string FirstName, string LastName, string Password)
         {
             var content = new FormUrlEncodedContent(new[]{
                 new KeyValuePair<string,string>("email", Email),
@@ -89,9 +99,12 @@ namespace FSLTaskManager.Data
                 new KeyValuePair<string,string>("password", Password)
             });
 
-            HttpResponseMessage resp = await _http.PostAsync("auth/register", content);
+            //HttpResponseMessage resp = _http.PostAsync("auth/register", content);
+            var t1 = Task.Run(() => _http.PostAsync("auth/register", content));
+            t1.Wait();
+            HttpResponseMessage resp = t1.Result;
 
-            RegistrationResult registrationResult = new RegistrationResult();
+            RegistrationResult registrationResult = new();
 
             if (resp.StatusCode == System.Net.HttpStatusCode.Created)
             {
@@ -103,59 +116,76 @@ namespace FSLTaskManager.Data
                 registrationResult.EmailFailed = true;
                 return registrationResult;
             }
-            ErrorResponse? errorResponse = await resp.Content.ReadFromJsonAsync<ErrorResponse>();
+            //ErrorResponse? errorResponse = resp.Content.ReadFromJsonAsync<ErrorResponse>();
+            var t2 = Task.Run(() => resp.Content.ReadFromJsonAsync<ErrorResponse>());
+            t2.Wait();
+            ErrorResponse? errorResponse = t2.Result;
             if (errorResponse != null) registrationResult.Error = errorResponse.error;
             return registrationResult;
         }
 
-        public async Task<String> ValidateEmail(string Email, string Code)
+        public String ValidateEmail(string Email, string Code)
         {
             var content = new FormUrlEncodedContent(new[]{
                 new KeyValuePair<string,string>("email", Email),
                 new KeyValuePair<string,string>("code", Code)
             });
 
-            HttpResponseMessage resp = await _http.PostAsync("auth/validateemail", content);
+            var t1 = Task.Run(() => _http.PostAsync("auth/validateemail", content));
+            t1.Wait();
+            HttpResponseMessage resp = t1.Result;
 
             if (resp.StatusCode == System.Net.HttpStatusCode.NoContent) return "";
-            ErrorResponse? errorResponse = await resp.Content.ReadFromJsonAsync<ErrorResponse>();
+            var t2 = Task.Run(() => resp.Content.ReadFromJsonAsync<ErrorResponse>());
+            t2.Wait();
+            ErrorResponse? errorResponse = t2.Result;
             if (errorResponse != null) return errorResponse.error;
             else return "";
         }
 
-        public async Task<String> SendEmail(string Email)
+        public String SendEmail(string Email)
         {
             var content = new FormUrlEncodedContent(new[]{
                 new KeyValuePair<string,string>("email", Email)
             });
 
-            HttpResponseMessage resp = await _http.PostAsync("auth/sendemail", content);
+            var t1 = Task.Run(() => _http.PostAsync("auth/sendemail", content));
+            t1.Wait();
+            HttpResponseMessage resp = t1.Result;
 
             if (resp.StatusCode == System.Net.HttpStatusCode.NoContent) return "";
-            ErrorResponse? errorResponse = await resp.Content.ReadFromJsonAsync<ErrorResponse>();
+            var t2 = Task.Run(() => resp.Content.ReadFromJsonAsync<ErrorResponse>());
+            t2.Wait();
+            ErrorResponse? errorResponse = t2.Result;
             if (errorResponse != null) return errorResponse.error;
             else return "";
         }
 
-        public async Task<UserResult> GetLoggedInUser()
+        public UserResult GetLoggedInUser()
         {
             try
             {
                 SetUserToken();
-                HttpResponseMessage resp = await _http.GetAsync("users");
+                var t1 = Task.Run(() => _http.GetAsync("users"));
+                t1.Wait();
+                HttpResponseMessage resp = t1.Result;
 
-                UserResult userResult = new UserResult();
+                UserResult userResult = new();
 
                 if (resp.StatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    User? userResponse = await resp.Content.ReadFromJsonAsync<User>();
+                    var t3 = Task.Run(() => resp.Content.ReadFromJsonAsync<User>());
+                    t3.Wait();
+                    User? userResponse = t3.Result;
                     if (userResponse != null)
                     {
                         userResult.UserInfo = userResponse;
                     }
                     return userResult;
                 }
-                ErrorResponse? errorResponse = await resp.Content.ReadFromJsonAsync<ErrorResponse>();
+                var t2 = Task.Run(() => resp.Content.ReadFromJsonAsync<ErrorResponse>());
+                t2.Wait();
+                ErrorResponse? errorResponse = t2.Result;
                 if (errorResponse != null) userResult.Error = errorResponse.error;
                 return userResult;
             }
@@ -169,25 +199,31 @@ namespace FSLTaskManager.Data
             }
         }
 
-        public async Task<UserResult> GetUser(string UserId)
+        public UserResult GetUser(string UserId)
         {
             try
             {
                 SetUserToken();
-                HttpResponseMessage resp = await _http.GetAsync("users/" + UserId);
+                var t1 = Task.Run(() => _http.GetAsync("users/" + UserId));
+                t1.Wait();
+                HttpResponseMessage resp = t1.Result;
 
-                UserResult userResult = new UserResult();
+                UserResult userResult = new();
 
                 if (resp.StatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    User? userResponse = await resp.Content.ReadFromJsonAsync<User>();
+                    var t3 = Task.Run(() => resp.Content.ReadFromJsonAsync<User>());
+                    t3.Wait();
+                    User? userResponse = t3.Result;
                     if (userResponse != null)
                     {
                         userResult.UserInfo = userResponse;
                     }
                     return userResult;
                 }
-                ErrorResponse? errorResponse = await resp.Content.ReadFromJsonAsync<ErrorResponse>();
+                var t2 = Task.Run(() => resp.Content.ReadFromJsonAsync<ErrorResponse>());
+                t2.Wait();
+                ErrorResponse? errorResponse = t2.Result;
                 if (errorResponse != null) userResult.Error = errorResponse.error;
                 return userResult;
             }
@@ -201,22 +237,28 @@ namespace FSLTaskManager.Data
             }
         }
 
-        public async Task<AvatarListResult> GetAvatarsList()
+        public AvatarListResult GetAvatarsList()
         {
             try
             {
                 SetUserToken();
-                HttpResponseMessage resp = await _http.GetAsync("users/avatars/list");
+                var t1 = Task.Run(() => _http.GetAsync("users/avatars/list"));
+                t1.Wait();
+                HttpResponseMessage resp = t1.Result;
 
-                AvatarListResult avatarListResult = new AvatarListResult();
+                AvatarListResult avatarListResult = new();
 
                 if (resp.StatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    AvatarListResponse? avatarListResponse = await resp.Content.ReadFromJsonAsync<AvatarListResponse>();
+                    var t3 = Task.Run(() => resp.Content.ReadFromJsonAsync<AvatarListResponse>());
+                    t3.Wait();
+                    AvatarListResponse? avatarListResponse = t3.Result;
                     if (avatarListResponse != null) avatarListResult.AvatarList = avatarListResponse.avatarList;
                     return avatarListResult;
                 }
-                ErrorResponse? errorResponse = await resp.Content.ReadFromJsonAsync<ErrorResponse>();
+                var t2 = Task.Run(() => resp.Content.ReadFromJsonAsync<ErrorResponse>());
+                t2.Wait();
+                ErrorResponse? errorResponse = t2.Result;
                 if (errorResponse != null) avatarListResult.Error = errorResponse.error;
                 return avatarListResult;
             }
@@ -230,7 +272,7 @@ namespace FSLTaskManager.Data
             }
         }
 
-        public async Task<string> SaveUserSettings(string FirstName, string LastName, string AvatarUrl)
+        public string SaveUserSettings(string FirstName, string LastName, string AvatarUrl)
         {
             try
             {
@@ -241,13 +283,17 @@ namespace FSLTaskManager.Data
                     new KeyValuePair<string,string>("avatarUrl", AvatarUrl)
                 });
 
-                HttpResponseMessage resp = await _http.PutAsync("users/", content);
+                var t1 = Task.Run(() => _http.PutAsync("users/", content));
+                t1.Wait();
+                HttpResponseMessage resp = t1.Result;
 
                 if (resp.StatusCode == System.Net.HttpStatusCode.OK)
                 {
                     return "";
                 }
-                ErrorResponse? errorResponse = await resp.Content.ReadFromJsonAsync<ErrorResponse>();
+                var t2 = Task.Run(() => resp.Content.ReadFromJsonAsync<ErrorResponse>());
+                t2.Wait();
+                ErrorResponse? errorResponse = t2.Result;
                 if (errorResponse != null) return errorResponse.error;
                 else return "";
             }
@@ -261,23 +307,29 @@ namespace FSLTaskManager.Data
             }
         }
 
-        public async Task<UserAssigneesResult> GetUserAssignees()
+        public UserAssigneesResult GetUserAssignees()
         {
             try
             {
                 SetUserToken();
-                HttpResponseMessage resp = await _http.GetAsync("TM/assignees");
+                var t1 = Task.Run(() => _http.GetAsync("TM/assignees"));
+                t1.Wait();
+                HttpResponseMessage resp = t1.Result;
 
-                UserAssigneesResult assigneesResult = new UserAssigneesResult();
+                UserAssigneesResult assigneesResult = new();
 
                 if (resp.StatusCode == System.Net.HttpStatusCode.NoContent) return assigneesResult;
                 if (resp.StatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    User[]? assigneesResponse = await resp.Content.ReadFromJsonAsync<User[]?>();
+                    var t3 = Task.Run(() => resp.Content.ReadFromJsonAsync<User[]?>());
+                    t3.Wait();
+                    User[]? assigneesResponse = t3.Result;
                     if (assigneesResponse != null) assigneesResult.Assignees = assigneesResponse;
                     return assigneesResult;
                 }
-                ErrorResponse? errorResponse = await resp.Content.ReadFromJsonAsync<ErrorResponse>();
+                var t2 = Task.Run(() => resp.Content.ReadFromJsonAsync<ErrorResponse>());
+                t2.Wait();
+                ErrorResponse? errorResponse = t2.Result;
                 if (errorResponse != null) assigneesResult.Error = errorResponse.error;
                 return assigneesResult;
             }
@@ -291,7 +343,7 @@ namespace FSLTaskManager.Data
             }
         }
 
-        public async Task<string> AddAssignee(string Email)
+        public string AddAssignee(string Email)
         {
             try
             {
@@ -300,13 +352,17 @@ namespace FSLTaskManager.Data
                     new KeyValuePair<string,string>("email", Email),
                 });
 
-                HttpResponseMessage resp = await _http.PostAsync("TM/assignees", content);
+                var t1 = Task.Run(() => _http.PostAsync("TM/assignees", content));
+                t1.Wait();
+                HttpResponseMessage resp = t1.Result;
 
                 if (resp.StatusCode == System.Net.HttpStatusCode.Created)
                 {
                     return "";
                 }
-                ErrorResponse? errorResponse = await resp.Content.ReadFromJsonAsync<ErrorResponse>();
+                var t2 = Task.Run(() => resp.Content.ReadFromJsonAsync<ErrorResponse>());
+                t2.Wait();
+                ErrorResponse? errorResponse = t2.Result;
                 if (errorResponse != null) return errorResponse.error;
                 else return "";
             }
@@ -320,25 +376,29 @@ namespace FSLTaskManager.Data
             }
         }
 
-        public async Task<TasksResult> GetTasks(string AssigneeId)
+        public TasksResult GetTasks(string AssigneeId)
         {
             try
             {
                 SetUserToken();
-                HttpResponseMessage resp = await _http.GetAsync("TM/tasks/" + AssigneeId);
+                var t1 = Task.Run(() => _http.GetAsync("TM/tasks/" + AssigneeId));
+                t1.Wait();
+                HttpResponseMessage resp = t1.Result;
 
-                TasksResult taskResult = new TasksResult();
+                TasksResult taskResult = new();
 
                 if (resp.StatusCode == System.Net.HttpStatusCode.NoContent) return taskResult;
                 if (resp.StatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    TMTask[]? tasksResponse = await resp.Content.ReadFromJsonAsync<TMTask[]>();
+                    var t3 = Task.Run(() => resp.Content.ReadFromJsonAsync<TMTask[]>());
+                    t3.Wait();
+                    TMTask[]? tasksResponse = t3.Result;
                     if (tasksResponse != null)
                     {
                         taskResult.Tasks = tasksResponse;
                         foreach (TMTask task in taskResult.Tasks)
                         {
-                            var result = await GetUser(task.owner);
+                            var result = GetUser(task.owner);
                             if (result.Error == "")
                             {
                                 task.ownerName = result.UserInfo.fullName;
@@ -347,7 +407,9 @@ namespace FSLTaskManager.Data
                     }
                     return taskResult;
                 }
-                ErrorResponse? errorResponse = await resp.Content.ReadFromJsonAsync<ErrorResponse>();
+                var t2 = Task.Run(() => resp.Content.ReadFromJsonAsync<ErrorResponse>());
+                t2.Wait();
+                ErrorResponse? errorResponse = t2.Result;
                 if (errorResponse != null) taskResult.Error = errorResponse.error;
                 return taskResult;
             }
@@ -361,7 +423,7 @@ namespace FSLTaskManager.Data
             }
         }
 
-        public async Task<string> AddTask(TMTask task)
+        public string AddTask(TMTask task)
         {
             try
             {
@@ -376,13 +438,17 @@ namespace FSLTaskManager.Data
                     new KeyValuePair<string,string>("completedDate", task.completedDate)
                 });
 
-                HttpResponseMessage resp = await _http.PostAsync("TM/tasks", content);
+                var t1 = Task.Run(() => _http.PostAsync("TM/tasks", content));
+                t1.Wait();
+                HttpResponseMessage resp = t1.Result;
 
                 if (resp.StatusCode == System.Net.HttpStatusCode.Created)
                 {
                     return "";
                 }
-                ErrorResponse? errorResponse = await resp.Content.ReadFromJsonAsync<ErrorResponse>();
+                var t2 = Task.Run(() => resp.Content.ReadFromJsonAsync<ErrorResponse>());
+                t2.Wait();
+                ErrorResponse? errorResponse = t2.Result;
                 if (errorResponse != null) return errorResponse.error;
                 else return "";
             }
@@ -396,7 +462,7 @@ namespace FSLTaskManager.Data
             }
         }
 
-        public async Task<string> UpdateTask(TMTask task)
+        public string UpdateTask(TMTask task)
         {
             try
             {
@@ -412,13 +478,17 @@ namespace FSLTaskManager.Data
                     new KeyValuePair<string,string>("completedDate", task.completedDate)
                 });
 
-                HttpResponseMessage resp = await _http.PutAsync("TM/tasks", content);
+                var t1 = Task.Run(() => _http.PutAsync("TM/tasks", content));
+                t1.Wait();
+                HttpResponseMessage resp = t1.Result;
 
                 if (resp.StatusCode == System.Net.HttpStatusCode.OK)
                 {
                     return "";
                 }
-                ErrorResponse? errorResponse = await resp.Content.ReadFromJsonAsync<ErrorResponse>();
+                var t2 = Task.Run(() => resp.Content.ReadFromJsonAsync<ErrorResponse>());
+                t2.Wait();
+                ErrorResponse? errorResponse = t2.Result;
                 if (errorResponse != null) return errorResponse.error;
                 else return "";
             }
@@ -432,27 +502,33 @@ namespace FSLTaskManager.Data
             }
         }
 
-        public async Task<TaskNotesResult> GetTaskNotes(string TaskId)
+        public TaskNotesResult GetTaskNotes(string TaskId)
         {
             try
             {
                 SetUserToken();
-                HttpResponseMessage resp = await _http.GetAsync("TM/tasknotes/" + TaskId);
+                var t1 = Task.Run(() => _http.GetAsync("TM/tasknotes/" + TaskId));
+                t1.Wait();
+                HttpResponseMessage resp = t1.Result;
 
-                TaskNotesResult taskNotesResult = new TaskNotesResult();
+                TaskNotesResult taskNotesResult = new();
 
                 if (resp.StatusCode == System.Net.HttpStatusCode.NoContent) return taskNotesResult;
                 if (resp.StatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    //var value = await resp.Content.ReadAsStringAsync();
-                    TMTaskNote[]? taskNotesResponse = await resp.Content.ReadFromJsonAsync<TMTaskNote[]>();
+                    //var value = resp.Content.ReadAsStringAsync();
+                    var t3 = Task.Run(() => resp.Content.ReadFromJsonAsync<TMTaskNote[]>());
+                    t3.Wait();
+                    TMTaskNote[]? taskNotesResponse = t3.Result;
                     if (taskNotesResponse != null)
                     {
                         taskNotesResult.TaskNotes = taskNotesResponse;
                     }
                     return taskNotesResult;
                 }
-                ErrorResponse? errorResponse = await resp.Content.ReadFromJsonAsync<ErrorResponse>();
+                var t2 = Task.Run(() => resp.Content.ReadFromJsonAsync<ErrorResponse>());
+                t2.Wait();
+                ErrorResponse? errorResponse = t2.Result;
                 if (errorResponse != null) taskNotesResult.Error = errorResponse.error;
                 return taskNotesResult;
             }
@@ -466,7 +542,7 @@ namespace FSLTaskManager.Data
             }
         }
 
-        public async Task<string> AddTaskNote(TMTaskNote taskNote)
+        public string AddTaskNote(TMTaskNote taskNote)
         {
             try
             {
@@ -477,13 +553,17 @@ namespace FSLTaskManager.Data
                     new KeyValuePair<string,string>("note", taskNote.note),
                 });
 
-                HttpResponseMessage resp = await _http.PostAsync("TM/tasknotes", content);
+                var t1 = Task.Run(() => _http.PostAsync("TM/tasknotes", content));
+                t1.Wait();
+                HttpResponseMessage resp = t1.Result;
 
                 if (resp.StatusCode == System.Net.HttpStatusCode.Created)
                 {
                     return "";
                 }
-                ErrorResponse? errorResponse = await resp.Content.ReadFromJsonAsync<ErrorResponse>();
+                var t2 = Task.Run(() => resp.Content.ReadFromJsonAsync<ErrorResponse>());
+                t2.Wait();
+                ErrorResponse? errorResponse = t2.Result;
                 if (errorResponse != null) return errorResponse.error;
                 else return "";
             }
@@ -497,7 +577,7 @@ namespace FSLTaskManager.Data
             }
         }
 
-        public async Task<string> UpdateTaskNote(TMTaskNote taskNote)
+        public string UpdateTaskNote(TMTaskNote taskNote)
         {
             try
             {
@@ -508,13 +588,17 @@ namespace FSLTaskManager.Data
                     new KeyValuePair<string,string>("note", taskNote.note),
                 });
 
-                HttpResponseMessage resp = await _http.PutAsync("TM/tasknotes", content);
+                var t1 = Task.Run(() => _http.PutAsync("TM/tasknotes", content));
+                t1.Wait();
+                HttpResponseMessage resp = t1.Result;
 
                 if (resp.StatusCode == System.Net.HttpStatusCode.OK)
                 {
                     return "";
                 }
-                ErrorResponse? errorResponse = await resp.Content.ReadFromJsonAsync<ErrorResponse>();
+                var t2 = Task.Run(() => resp.Content.ReadFromJsonAsync<ErrorResponse>());
+                t2.Wait();
+                ErrorResponse? errorResponse = t2.Result;
                 if (errorResponse != null) return errorResponse.error;
                 else return "";
             }

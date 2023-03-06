@@ -1,19 +1,11 @@
 ﻿using FSLTaskManager.Data;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace FSLTaskManager
 {
     public partial class FrmValidateEmail : Form
     {
-        private APIClient _APIClient = new APIClient();
+        private readonly APIClient _APIClient = new();
 
         public FrmValidateEmail()
         {
@@ -25,7 +17,7 @@ namespace FSLTaskManager
             TxtEmail.Text = email;
         }
 
-        private async void BtnValidate_Click(object sender, EventArgs e)
+        private void BtnValidate_Click(object sender, EventArgs e)
         {
             try
             {
@@ -34,7 +26,7 @@ namespace FSLTaskManager
                 {
                     TxtEmail.Text = TxtEmail.Text.Trim();
                     TxtCode.Text = TxtCode.Text.Trim();
-                    var result = await _APIClient.ValidateEmail(TxtEmail.Text, TxtCode.Text);
+                    var result = _APIClient.ValidateEmail(TxtEmail.Text, TxtCode.Text);
                     if (result == "")
                     {
                         MessageBox.Show("Validation successful. You may now log in.");
